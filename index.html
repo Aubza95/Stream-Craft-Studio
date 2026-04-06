@@ -12,7 +12,7 @@
     <style>
         :root {
             --bg-deep: #020617;
-            --glass: rgba(15, 23, 42, 0.85);
+            --glass: rgba(15, 23, 42, 0.92);
             --accent-blue: linear-gradient(135deg, #3b82f6, #1d4ed8);
             --accent-green: linear-gradient(135deg, #10b981, #047857);
             --accent-red: linear-gradient(135deg, #ef4444, #b91c1c);
@@ -23,80 +23,81 @@
             color: #f1f5f9; 
             overflow: hidden; 
             font-family: 'Inter', system-ui, sans-serif; 
-            height: 100vh; 
+            /* Fix for Android/iOS navigation bars */
+            height: 100vh;
+            height: 100svh; 
             margin: 0;
             display: flex; 
             flex-direction: column; 
             touch-action: none;
         }
         
+        /* 1. Preview Area: Maintains 16:9 Aspect Ratio */
         #canvas-wrap { 
-            flex-grow: 1; 
-            background: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
+            flex: 1; 
+            background: #000;
             position: relative; 
             display: flex; 
             align-items: center; 
-            justify-content: center; 
+            justify-content: center;
+            width: 100%;
             overflow: hidden;
         }
+
         #render-canvas { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: contain; 
-            filter: drop-shadow(0 0 30px rgba(0,0,0,0.9));
+            width: 100% !important; 
+            height: auto !important; 
+            aspect-ratio: 16 / 9;
+            max-height: 85%; 
+            object-fit: contain;
+            box-shadow: 0 0 50px rgba(0,0,0,1);
         }
 
+        /* 2. Premium Dashboard: Lifted to clear system buttons */
         .control-bar { 
             background: var(--glass);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
             display: grid; 
             grid-template-columns: 1fr 1fr; 
-            gap: 12px; 
-            padding: 16px; 
-            border-top: 1px solid rgba(255,255,255,0.08);
-            padding-bottom: env(safe-area-inset-bottom, 20px);
-            box-shadow: 0 -15px 35px rgba(0,0,0,0.6);
+            gap: 10px; 
+            padding: 16px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            
+            /* The "Buffer" fix for Android Back/Home buttons */
+            padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 28px); 
+            
+            box-shadow: 0 -15px 40px rgba(0,0,0,0.9);
             z-index: 50;
         }
 
         @media (orientation: portrait) {
-            .control-bar { grid-template-columns: 1fr; }
+            .control-bar { grid-template-columns: 1fr; gap: 14px; }
             .panel { align-items: center !important; text-align: center !important; }
+            .btn-premium { min-height: 44px; }
         }
 
+        /* 3. UI Elements */
         .btn-premium { 
-            min-height: 48px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            font-weight: 800; 
-            border-radius: 14px; 
-            font-size: 11px; 
-            text-transform: uppercase; 
-            letter-spacing: 0.05em;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; align-items: center; justify-content: center; 
+            font-weight: 800; border-radius: 14px; text-transform: uppercase; 
+            font-size: 10px; letter-spacing: 0.05em;
+            transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1); 
             border: 1px solid rgba(255,255,255,0.1);
         }
         .btn-premium:active { transform: scale(0.95); opacity: 0.8; }
-        .bg-blue-grad { background: var(--accent-blue); box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); }
-        .bg-green-grad { background: var(--accent-green); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
-        .bg-glass { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); }
+        
+        .bg-blue-grad { background: var(--accent-blue); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
+        .bg-green-grad { background: var(--accent-green); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+        .bg-glass { background: rgba(255,255,255,0.08); }
 
         .rec-btn { 
-            width: 64px; height: 64px; 
-            border-radius: 50%; 
-            background: var(--accent-red); 
-            border: 4px solid #fff; 
-            cursor: pointer;
-            box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+            width: 60px; height: 60px; border-radius: 50%; 
+            background: var(--accent-red); border: 4px solid #fff; 
+            cursor: pointer; box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
         }
-        .rec-btn.active { 
-            border-radius: 18px; 
-            background: #fff; 
-            border-color: #ef4444; 
-            animation: pulse-glow 1.5s infinite; 
-        }
+        .rec-btn.active { border-radius: 15px; background: #fff; border-color: #ef4444; animation: pulse-glow 1.5s infinite; }
 
         @keyframes pulse-glow {
             0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
@@ -104,62 +105,62 @@
             100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
 
-        .panel { display: flex; flex-direction: column; gap: 6px; }
-        
-        input[type=range] { appearance: none; background: rgba(255,255,255,0.1); height: 5px; border-radius: 10px; width: 100%; }
-        input[type=range]::-webkit-slider-thumb { appearance: none; height: 22px; width: 22px; border-radius: 50%; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.5); border: 2px solid #3b82f6; }
+        input[type=range] { appearance: none; background: rgba(255,255,255,0.1); height: 4px; border-radius: 10px; width: 100%; }
+        input[type=range]::-webkit-slider-thumb { appearance: none; height: 20px; width: 20px; border-radius: 50%; background: #fff; border: 2px solid #3b82f6; }
     </style>
 </head>
 <body>
 
-<div class="fixed top-4 left-4 flex gap-2 items-center z-[100]">
-    <div id="status-badge" class="px-4 py-1.5 rounded-full text-[10px] font-black bg-white/10 backdrop-blur-lg border border-white/20 text-blue-300 tracking-widest">DEMO MODE</div>
-    <button id="upgrade-btn" onclick="checkLicense()" class="bg-blue-grad text-white px-5 py-1.5 rounded-full text-[10px] font-black shadow-lg">UPGRADE PRO</button>
-    <button onclick="toggleGallery()" class="bg-glass px-5 py-1.5 rounded-full text-[10px] font-black border border-white/10 backdrop-blur-lg">🎬 GALLERY</button>
+<div class="fixed top-4 left-4 right-4 flex justify-between items-center z-[100]">
+    <div id="status-badge" class="px-3 py-1 rounded-full text-[9px] font-black bg-black/40 backdrop-blur-md border border-white/10 text-blue-400 tracking-widest uppercase">Studio Pro</div>
+    <div class="flex gap-2">
+        <button id="upgrade-btn" onclick="checkLicense()" class="bg-blue-grad text-white px-4 py-1 rounded-full text-[9px] font-black">UPGRADE</button>
+        <button onclick="toggleGallery()" class="bg-black/40 px-4 py-1.5 rounded-full text-[9px] font-black border border-white/10">🎬 GALLERY</button>
+    </div>
 </div>
 
 <div id="canvas-wrap"><canvas id="render-canvas"></canvas></div>
 
 <div class="control-bar">
-    <div class="col-span-full flex justify-center items-center gap-10 pb-4 border-b border-white/5">
-        <button id="mute-btn" onclick="toggleMasterMute()" class="w-12 h-12 rounded-2xl bg-glass flex items-center justify-center text-xl">🔊</button>
+    <div class="col-span-full flex justify-center items-center gap-8 pb-3 mb-1 border-b border-white/5">
+        <button id="mute-btn" onclick="toggleMasterMute()" class="w-11 h-11 rounded-2xl bg-glass flex items-center justify-center text-xl">🔊</button>
         <div id="rec-trigger" class="rec-btn" onclick="toggleRecording()"></div>
         <div class="flex flex-col items-center">
-            <span id="timer" class="text-[10px] font-mono text-red-500 opacity-0 font-black tracking-widest mb-1">REC 00:00</span>
+            <span id="timer" class="text-[9px] font-mono text-red-500 opacity-0 font-black tracking-widest mb-1">00:00</span>
             <input type="color" id="pen-color" value="#3b82f6" class="w-8 h-8 bg-transparent border-none cursor-pointer">
         </div>
-        <button onclick="clearDraw()" class="bg-glass px-5 py-2.5 rounded-xl text-[10px] font-black text-gray-400">CLEAR</button>
+        <button onclick="clearDraw()" class="bg-glass px-4 py-2 rounded-xl text-[9px] font-black text-gray-400">CLEAR</button>
     </div>
 
     <div class="panel items-start">
         <div class="flex justify-between w-full mb-1">
-            <span class="text-[10px] font-black text-blue-400 uppercase tracking-widest">Selfie Camera</span>
-            <button onclick="toggleMirror()" class="text-[10px] text-gray-500 font-bold tracking-tighter">🪞 MIRROR</button>
+            <span class="text-[9px] font-black text-blue-400 uppercase tracking-widest">Selfie Camera</span>
+            <button onclick="toggleMirror()" class="text-[9px] text-gray-600 font-bold tracking-tighter">🪞 MIRROR</button>
         </div>
-        <button onclick="startCamera('small', 'user')" class="btn-premium w-full bg-blue-grad">ACTIVATE SELFIE</button>
+        <button onclick="startCamera('small', 'user')" class="btn-premium w-full bg-blue-grad shadow-blue-500/20">ACTIVATE SELFIE</button>
         <div class="w-full flex items-center gap-3 mt-2">
-            <span class="text-xs">🎤</span>
+            <span class="text-[10px]">🎤</span>
             <input type="range" min="0" max="1" step="0.1" value="0.8" oninput="updateVol('small', this.value)">
         </div>
     </div>
 
     <div class="panel items-end text-right">
-        <span class="text-[10px] font-black text-green-400 uppercase tracking-widest mb-1">Backdrop Media</span>
+        <span class="text-[9px] font-black text-green-400 uppercase tracking-widest mb-1">Backdrop Media</span>
         <div class="flex gap-2 w-full">
             <button onclick="upload('full')" class="btn-premium flex-1 bg-glass">📂 FILE</button>
-            <button id="play-pause-btn" onclick="togglePlayback()" class="btn-premium w-14 bg-glass">⏯️</button>
-            <button onclick="startScreenShare()" class="btn-premium flex-1 bg-green-grad">💻 SCREEN</button>
+            <button id="play-pause-btn" onclick="togglePlayback()" class="btn-premium w-12 bg-glass">⏯️</button>
+            <button onclick="startScreenShare()" class="btn-premium flex-1 bg-green-grad shadow-green-500/20 text-[9px]">💻 SCREEN</button>
         </div>
         <div class="w-full flex items-center gap-3 mt-2">
             <input type="range" min="0" max="1" step="0.1" value="0.5" oninput="updateVol('full', this.value)">
-            <span class="text-xs">🔊</span>
+            <span class="text-[10px]">🔊</span>
         </div>
     </div>
 </div>
 
 <div id="gallery-overlay" class="hidden fixed inset-0 bg-slate-950/98 z-[110] overflow-y-auto p-8 backdrop-blur-2xl">
     <div class="flex justify-between items-center mb-10 max-w-4xl mx-auto">
-        <h2 class="text-3xl font-black italic text-blue-400 tracking-tighter">STUDIO GALLERY</h2>
+        <h2 class="text-3xl font-black italic text-blue-400">GALLERY</h2>
         <button onclick="toggleGallery()" class="text-3xl font-light">✕</button>
     </div>
     <div id="gallery-grid" class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto"></div>
@@ -358,7 +359,7 @@
     }
     
     function checkLicense() { if (prompt("Enter License Key:") === PRO_KEY) { localStorage.setItem('sc_pro_active', 'true'); location.reload(); } }
-    function updateProUI() { if (state.isPro) { document.getElementById('status-badge').innerText = "⭐ PRO ACTIVE"; document.getElementById('status-badge').classList.replace('text-blue-300','text-yellow-400'); document.getElementById('upgrade-btn').remove(); } }
+    function updateProUI() { if (state.isPro) { document.getElementById('status-badge').innerText = "⭐ PRO ACTIVE"; document.getElementById('status-badge').classList.replace('text-blue-300','text-yellow-400'); if(document.getElementById('upgrade-btn')) document.getElementById('upgrade-btn').remove(); } }
     function clearDraw(){drawCtx.clearRect(0,0,1280,720);}
 </script>
 </body>
