@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>StreamCraft Studio Pro</title>
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="icon-512.png">
@@ -10,93 +10,159 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation"></script>
     <style>
-        body { background: #0f172a; color: white; overflow: hidden; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; touch-action: none; }
-        
-        /* Adaptive Canvas Wrap */
-        #canvas-wrap { flex: 1; background: #000; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        #render-canvas { max-width: 100%; max-height: 100%; object-fit: contain; box-shadow: 0 0 50px rgba(0,0,0,0.9); }
+        :root {
+            --bg-deep: #020617;
+            --glass: rgba(15, 23, 42, 0.85);
+            --accent-blue: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            --accent-green: linear-gradient(135deg, #10b981, #047857);
+            --accent-red: linear-gradient(135deg, #ef4444, #b91c1c);
+        }
 
-        /* Flexible Control Bar */
+        body { 
+            background: var(--bg-deep); 
+            color: #f1f5f9; 
+            overflow: hidden; 
+            font-family: 'Inter', system-ui, sans-serif; 
+            height: 100vh; 
+            margin: 0;
+            display: flex; 
+            flex-direction: column; 
+            touch-action: none;
+        }
+        
+        #canvas-wrap { 
+            flex-grow: 1; 
+            background: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
+            position: relative; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            overflow: hidden;
+        }
+        #render-canvas { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: contain; 
+            filter: drop-shadow(0 0 30px rgba(0,0,0,0.9));
+        }
+
         .control-bar { 
-            background: #1e293b; 
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             display: grid; 
             grid-template-columns: 1fr 1fr; 
             gap: 12px; 
-            padding: 15px; 
-            border-top: 2px solid #334155;
-            min-height: 35vh;
+            padding: 16px; 
+            border-top: 1px solid rgba(255,255,255,0.08);
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+            box-shadow: 0 -15px 35px rgba(0,0,0,0.6);
+            z-index: 50;
         }
 
-        /* Portrait Mode Adjustments */
         @media (orientation: portrait) {
-            .control-bar { grid-template-columns: 1fr; padding-bottom: 40px; overflow-y: auto; }
+            .control-bar { grid-template-columns: 1fr; }
             .panel { align-items: center !important; text-align: center !important; }
-            #canvas-wrap { height: 40vh; flex: none; }
+        }
+
+        .btn-premium { 
+            min-height: 48px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-weight: 800; 
+            border-radius: 14px; 
+            font-size: 11px; 
+            text-transform: uppercase; 
+            letter-spacing: 0.05em;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .btn-premium:active { transform: scale(0.95); opacity: 0.8; }
+        .bg-blue-grad { background: var(--accent-blue); box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); }
+        .bg-green-grad { background: var(--accent-green); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
+        .bg-glass { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); }
+
+        .rec-btn { 
+            width: 64px; height: 64px; 
+            border-radius: 50%; 
+            background: var(--accent-red); 
+            border: 4px solid #fff; 
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+        }
+        .rec-btn.active { 
+            border-radius: 18px; 
+            background: #fff; 
+            border-color: #ef4444; 
+            animation: pulse-glow 1.5s infinite; 
+        }
+
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
 
         .panel { display: flex; flex-direction: column; gap: 6px; }
-        .rec-btn { width: 65px; height: 65px; border-radius: 50%; background: #ef4444; border: 4px solid #fff; cursor: pointer; transition: 0.3s; }
-        .rec-btn.active { border-radius: 12px; background: #fff; border-color: #ef4444; animation: pulse 1s infinite; }
-        @keyframes pulse { 50% { opacity: 0.5; } }
-        .btn-mobile { min-height: 44px; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 12px; font-size: 10px; text-transform: uppercase; }
         
-        input[type=range] { appearance: none; background: #334155; height: 4px; border-radius: 5px; width: 100%; }
-        input[type=range]::-webkit-slider-thumb { appearance: none; height: 18px; width: 18px; border-radius: 50%; background: #3b82f6; border: 2px solid #fff; }
+        input[type=range] { appearance: none; background: rgba(255,255,255,0.1); height: 5px; border-radius: 10px; width: 100%; }
+        input[type=range]::-webkit-slider-thumb { appearance: none; height: 22px; width: 22px; border-radius: 50%; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.5); border: 2px solid #3b82f6; }
     </style>
 </head>
 <body>
 
-<div class="fixed top-4 left-4 flex gap-2 items-center z-[90]">
-    <div id="status-badge" class="px-3 py-1 rounded-full text-[10px] font-bold bg-gray-500/20 text-gray-400 border border-gray-500/50 uppercase">DEMO</div>
-    <button id="upgrade-btn" onclick="checkLicense()" class="bg-gradient-to-r from-yellow-400 to-orange-500 text-black px-4 py-1.5 rounded-full text-[10px] font-black shadow-lg">UPGRADE</button>
-    <button onclick="toggleGallery()" class="bg-slate-800/80 px-4 py-1.5 rounded-full text-[10px] font-bold border border-slate-700 ml-2">🎬 GALLERY</button>
+<div class="fixed top-4 left-4 flex gap-2 items-center z-[100]">
+    <div id="status-badge" class="px-4 py-1.5 rounded-full text-[10px] font-black bg-white/10 backdrop-blur-lg border border-white/20 text-blue-300 tracking-widest">DEMO MODE</div>
+    <button id="upgrade-btn" onclick="checkLicense()" class="bg-blue-grad text-white px-5 py-1.5 rounded-full text-[10px] font-black shadow-lg">UPGRADE PRO</button>
+    <button onclick="toggleGallery()" class="bg-glass px-5 py-1.5 rounded-full text-[10px] font-black border border-white/10 backdrop-blur-lg">🎬 GALLERY</button>
 </div>
 
 <div id="canvas-wrap"><canvas id="render-canvas"></canvas></div>
 
 <div class="control-bar">
-    <div class="col-span-full flex justify-center items-center gap-6 pb-2 border-b border-slate-700/50">
-        <button id="mute-btn" onclick="toggleMasterMute()" class="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700">🔊</button>
+    <div class="col-span-full flex justify-center items-center gap-10 pb-4 border-b border-white/5">
+        <button id="mute-btn" onclick="toggleMasterMute()" class="w-12 h-12 rounded-2xl bg-glass flex items-center justify-center text-xl">🔊</button>
         <div id="rec-trigger" class="rec-btn" onclick="toggleRecording()"></div>
         <div class="flex flex-col items-center">
-            <span id="timer" class="text-[10px] font-mono text-red-500 opacity-0 mb-1 font-bold">REC 00:00</span>
-            <input type="color" id="pen-color" value="#3b82f6" class="w-8 h-8 bg-transparent border-none p-0">
+            <span id="timer" class="text-[10px] font-mono text-red-500 opacity-0 font-black tracking-widest mb-1">REC 00:00</span>
+            <input type="color" id="pen-color" value="#3b82f6" class="w-8 h-8 bg-transparent border-none cursor-pointer">
         </div>
-        <button onclick="clearDraw()" class="text-[9px] text-gray-500 underline uppercase">Clear Ink</button>
+        <button onclick="clearDraw()" class="bg-glass px-5 py-2.5 rounded-xl text-[10px] font-black text-gray-400">CLEAR</button>
     </div>
 
     <div class="panel items-start">
-        <span class="text-[9px] font-black text-blue-400 uppercase tracking-widest">Selfie Setup</span>
-        <div class="flex gap-2 w-full">
-            <button onclick="startCamera('small', 'user')" class="btn-mobile flex-1 bg-blue-600">LIVE SELFIE</button>
-            <button onclick="toggleMirror()" class="btn-mobile w-12 bg-slate-700">🪞</button>
+        <div class="flex justify-between w-full mb-1">
+            <span class="text-[10px] font-black text-blue-400 uppercase tracking-widest">Selfie Camera</span>
+            <button onclick="toggleMirror()" class="text-[10px] text-gray-500 font-bold tracking-tighter">🪞 MIRROR</button>
         </div>
-        <div class="w-full flex items-center gap-2 mt-1 px-1">
-            <span class="text-[10px]">🎤</span>
+        <button onclick="startCamera('small', 'user')" class="btn-premium w-full bg-blue-grad">ACTIVATE SELFIE</button>
+        <div class="w-full flex items-center gap-3 mt-2">
+            <span class="text-xs">🎤</span>
             <input type="range" min="0" max="1" step="0.1" value="0.8" oninput="updateVol('small', this.value)">
         </div>
     </div>
 
     <div class="panel items-end text-right">
-        <span class="text-[9px] font-black text-green-400 uppercase tracking-widest">Media Setup</span>
+        <span class="text-[10px] font-black text-green-400 uppercase tracking-widest mb-1">Backdrop Media</span>
         <div class="flex gap-2 w-full">
-            <button onclick="upload('full')" class="btn-mobile flex-1 bg-slate-700">FILE</button>
-            <button id="play-pause-btn" onclick="togglePlayback()" class="btn-mobile w-12 bg-slate-800 border border-slate-700">⏯️</button>
-            <button onclick="startScreenShare()" class="btn-mobile flex-1 bg-green-600">SCREEN</button>
+            <button onclick="upload('full')" class="btn-premium flex-1 bg-glass">📂 FILE</button>
+            <button id="play-pause-btn" onclick="togglePlayback()" class="btn-premium w-14 bg-glass">⏯️</button>
+            <button onclick="startScreenShare()" class="btn-premium flex-1 bg-green-grad">💻 SCREEN</button>
         </div>
-        <div class="w-full flex items-center gap-2 mt-1 px-1">
+        <div class="w-full flex items-center gap-3 mt-2">
             <input type="range" min="0" max="1" step="0.1" value="0.5" oninput="updateVol('full', this.value)">
-            <span class="text-[10px]">🔊</span>
+            <span class="text-xs">🔊</span>
         </div>
     </div>
 </div>
 
-<div id="gallery-overlay" class="hidden fixed inset-0 bg-slate-950/98 z-[100] overflow-y-auto p-6">
-    <div class="flex justify-between items-center mb-8 max-w-4xl mx-auto">
-        <h2 class="text-3xl font-black italic text-blue-400">GALLERY</h2>
-        <button onclick="toggleGallery()" class="text-2xl">✕</button>
+<div id="gallery-overlay" class="hidden fixed inset-0 bg-slate-950/98 z-[110] overflow-y-auto p-8 backdrop-blur-2xl">
+    <div class="flex justify-between items-center mb-10 max-w-4xl mx-auto">
+        <h2 class="text-3xl font-black italic text-blue-400 tracking-tighter">STUDIO GALLERY</h2>
+        <button onclick="toggleGallery()" class="text-3xl font-light">✕</button>
     </div>
-    <div id="gallery-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto"></div>
+    <div id="gallery-grid" class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto"></div>
 </div>
 
 <input type="file" id="file-picker" class="hidden">
@@ -126,7 +192,7 @@
         updateProUI(); setupInteractions(); requestAnimationFrame(renderLoop);
     }
 
-    function toggleMirror() { state.small.mirrored = !state.small.mirrored; }
+    function toggleMirror() { state.small.mirrored = !state.small.mirrored; if(navigator.vibrate) navigator.vibrate(30); }
 
     function renderLoop() {
         ctx.fillStyle='#000'; ctx.fillRect(0,0,1280,720);
@@ -137,8 +203,7 @@
             const s = state.small;
             ctx.save();
             ctx.globalAlpha = s.opacity;
-            ctx.shadowBlur = 20; ctx.shadowColor = "black";
-            
+            ctx.shadowBlur = 40; ctx.shadowColor = "rgba(0,0,0,0.8)";
             if(s.mirrored) {
                 ctx.translate(s.x + s.w, s.y);
                 ctx.scale(-1, 1);
@@ -147,19 +212,14 @@
                 ctx.drawImage(s.el, s.x, s.y, s.w, s.h);
             }
             ctx.restore();
-            
-            // Resize handle
             if(!state.isRecording) {
-                ctx.fillStyle = "#fbbf24";
-                ctx.fillRect(s.x + s.w - 15, s.y + s.h - 15, 15, 15);
+                ctx.fillStyle = "#3b82f6";
+                ctx.beginPath(); ctx.roundRect(s.x + s.w - 18, s.y + s.h - 18, 18, 18, 4); ctx.fill();
             }
         }
         requestAnimationFrame(renderLoop);
     }
 
-    // --- RE-USE PREVIOUS AUDIO/UPLOAD/RECORDING LOGIC FROM THE MASTER BUILD ---
-    // (Ensure you keep the mixAudio, toggleRecording, and upload functions from the previous version)
-    
     function initAudio() {
         if (audioCtx) return;
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -212,6 +272,7 @@
         initAudio(); state.isMuted = !state.isMuted;
         state.masterGain.gain.setTargetAtTime(state.isMuted ? 0 : 1, audioCtx.currentTime, 0.05);
         document.getElementById('mute-btn').innerText = state.isMuted ? "🔇" : "🔊";
+        document.getElementById('mute-btn').classList.toggle('bg-red-500/20', state.isMuted);
     }
 
     function togglePlayback() {
@@ -223,6 +284,7 @@
 
     function toggleRecording() {
         const btn = document.getElementById('rec-trigger');
+        const timer = document.getElementById('timer');
         if (!state.isRecording) {
             chunks = []; const s = canvas.captureStream(60);
             if(audioDest) s.addTrack(audioDest.stream.getAudioTracks()[0]);
@@ -232,11 +294,15 @@
                 const b = new Blob(chunks, { type: 'video/webm' });
                 saveToLocalDB(b);
                 const a = document.createElement('a'); a.href = URL.createObjectURL(b);
-                a.download = "Studio_Capture.webm"; a.click();
+                a.download = state.isPro ? "Studio_Pro_Capture.webm" : "Demo_Capture.webm"; a.click();
             };
             recorder.start(); state.isRecording = true; btn.classList.add('active');
-            document.getElementById('timer').classList.remove('opacity-0');
-        } else { recorder.stop(); state.isRecording = false; btn.classList.remove('active'); }
+            timer.classList.remove('opacity-0');
+            let secs = 0; recordingTimer = setInterval(() => {
+                secs++; timer.innerText = `REC ${Math.floor(secs/60).toString().padStart(2,'0')}:${(secs%60).toString().padStart(2,'0')}`;
+                if(!state.isPro && secs >= 30) { toggleRecording(); alert("Demo Limit Reached. Upgrade for Unlimited!"); }
+            }, 1000);
+        } else { recorder.stop(); state.isRecording = false; btn.classList.remove('active'); clearInterval(recordingTimer); timer.classList.add('opacity-0'); }
     }
 
     async function saveToLocalDB(blob) {
@@ -247,6 +313,8 @@
     function upload(t){const p=document.getElementById('file-picker');p.onchange=async(e)=>{const f=e.target.files[0],u=URL.createObjectURL(f);if(f.type==='application/pdf'){state[t].pdf=await pdfjsLib.getDocument(u).promise;renderPDF(t,1)}else if(f.type.startsWith('video')){const v=document.createElement('video');v.src=u;v.loop=true;v.play();state[t].el=v;mixAudio(v,t)}else{const i=new Image();i.src=u;state[t].el=i}};p.click();}
     async function renderPDF(t,n){const p=await state[t].pdf.getPage(n),v=p.getViewport({scale:2}),c=document.createElement('canvas');c.width=v.width;c.height=v.height;await p.render({canvasContext:c.getContext('2d'),viewport:v}).promise;state[t].el=c;}
     
+    function startScreenShare(){if(!state.isPro){checkLicense();return;}navigator.mediaDevices.getDisplayMedia({video:true,audio:true}).then(s=>{const v=document.createElement('video');v.srcObject=s;v.play();state.full.el=v;mixAudio(v, 'full', s);});}
+
     function toggleGallery() { document.getElementById('gallery-overlay').classList.toggle('hidden'); if(!document.getElementById('gallery-overlay').classList.contains('hidden')) loadGallery(); }
     function loadGallery() {
         const grid = document.getElementById('gallery-grid'); grid.innerHTML = "";
@@ -254,7 +322,10 @@
             const c = e.target.result;
             if (c) {
                 const d = c.value; const u = URL.createObjectURL(d.blob);
-                grid.innerHTML += `<div class="bg-slate-900 p-4 rounded-2xl"><video src="${u}" controls class="w-full rounded-lg mb-2"></video><p class="text-[10px]">${d.timestamp}</p></div>`;
+                grid.innerHTML += `<div class="bg-white/5 border border-white/10 p-5 rounded-3xl backdrop-blur-xl">
+                    <video src="${u}" controls class="w-full rounded-2xl mb-3 shadow-2xl bg-black"></video>
+                    <div class="flex justify-between items-center"><div class="text-[10px] text-gray-400 font-bold"><p>${d.timestamp}</p><p>${d.size}</p></div>
+                    <a href="${u}" download="capture.webm" class="bg-blue-grad px-4 py-2 rounded-xl text-[10px] font-black">SAVE</a></div></div>`;
                 c.continue();
             }
         };
@@ -287,7 +358,7 @@
     }
     
     function checkLicense() { if (prompt("Enter License Key:") === PRO_KEY) { localStorage.setItem('sc_pro_active', 'true'); location.reload(); } }
-    function updateProUI() { if (state.isPro) { document.getElementById('status-badge').innerText = "⭐ PRO ACTIVE"; document.getElementById('upgrade-btn').remove(); } }
+    function updateProUI() { if (state.isPro) { document.getElementById('status-badge').innerText = "⭐ PRO ACTIVE"; document.getElementById('status-badge').classList.replace('text-blue-300','text-yellow-400'); document.getElementById('upgrade-btn').remove(); } }
     function clearDraw(){drawCtx.clearRect(0,0,1280,720);}
 </script>
 </body>

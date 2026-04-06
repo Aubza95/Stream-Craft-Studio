@@ -1,4 +1,4 @@
-const CACHE_NAME = 'streamcraft-v3-universal';
+const CACHE_NAME = 'streamcraft-v4-premium';
 const ASSETS = [
   './',
   './index.html',
