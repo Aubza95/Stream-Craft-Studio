@@ -1,4 +1,4 @@
-const CACHE_NAME = 'streamcraft-v2-master';
+const CACHE_NAME = 'streamcraft-v3-universal';
 const ASSETS = [
   './',
   './index.html',
@@ -16,5 +16,3 @@ self.addEventListener('install', (e) => {
 self.addEventListener('fetch', (e) => {
   e.respondWith(caches.match(e.request).then((res) => res || fetch(e.request)));
 });
-
-
